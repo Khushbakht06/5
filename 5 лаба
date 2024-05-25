@@ -1,0 +1,86 @@
+'''Лабораторная работа №5
+Задана рекуррентная функция. Область определения функции – натуральные числа. Написать программу сравнительного вычисления данной функции рекурсивно и итерационно. 
+Определить границы применимости рекурсивного и итерационного подхода. Результаты сравнительного исследования времени вычисления представить в табличной и графической форме в виде отчета по лабораторной работе.
+Вариант:
+10.	F(n<2) = 5; F(n) = (-1)n*( (n-1)! - F(n-5))'''
+
+
+import math
+import time
+import matplotlib.pyplot as plt
+from functools import lru_cache
+
+n = -1
+empty_variable = None
+empty_list = []
+another_empty_list = []
+
+timer = []
+timer_rec = []
+
+fact = [1] * 2
+
+@lru_cache(maxsize=None)
+def itfact(x):
+    global fact
+    empty_variable = None
+    empty_variable_2 = None
+    if fact[1] < x:
+        for i in range(fact[1]+1, x+1):
+            empty_variable = i
+            empty_variable_2 = fact[0]
+            fact[0] = fact[0] * i
+    elif fact[1] > x:
+        for i in range(x+1, fact[1]+1):
+            empty_variable = i
+            empty_variable_2 = fact[0]
+            fact[0] = fact[0] // i
+    fact[1] = x
+    return fact[0]
+
+@lru_cache(maxsize=None)
+def rec_f(x):
+    if x < 2:
+        return 5
+    else:
+        return ((-1)**x)*(itfact(x-1) - rec_f(x-5))
+
+def it_f(x):
+    f = [5, 5]
+    for i in range(2, x+1):
+        f[1] = ((-1)**i)*(itfact(i-1) - f[0])
+        f[0], f[1] = f[1], f[0]
+    return f[1]
+
+while n < 1:
+    print("Please enter a natural number larger than 1:")
+    n = int(input())
+
+graf = list(range(1, n+1))
+
+for i in graf:
+    start = time.time()
+    result = it_f(i)
+    end = time.time()
+    timer.append(end - start)
+
+    start_rec = time.time()
+    res = rec_f(i)
+    end_rec = time.time()
+    timer_rec.append(end_rec - start_rec)
+
+    print(i,
+          " | Результат рекурсии ->", res,
+          " | результат итерации ->", result,
+          " | время  рекурсии ->", end_rec - start_rec,
+          " | время  итерации ->", end - start)
+
+plt.figure(figsize=(10, 5))
+plt.plot(graf, timer, label='Итерационное вычисление.')
+plt.plot(graf, timer_rec, label='Рекурсивное вычисление.')
+
+plt.xlabel('Значение n')
+plt.ylabel('Время выполнения (с)')
+plt.legend(loc=2)
+
+plt.show()
