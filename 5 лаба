@@ -8,73 +8,75 @@
 import math
 import time
 import matplotlib.pyplot as plt
-from functools import lru_cache  # Декоратор для кеширования вызовов функции
+from functools import lru_cache
 
-n = -1  # Инициализируем n для цикла ввода ниже
-empty_variable = None  # Неиспользуемые переменные, возможно, они были нужны при отладке
-empty_list = []  # То же самое для списков
-another_empty_list = [] 
+# Кэширование факториалов для ускорения работы
+factorials = {}
 
-timer = []  # Списки для хранения времени работы функций
-timer_rec = [] 
+def precompute_factorials(up_to):
+    global factorials
+    factorials = {0: 1}
+    for i in range(1, up_to + 1):
+        factorials[i] = factorials[i - 1] * i
 
-fact = [1] * 2  # Сосздаем список для хранения факториалов
-
-@lru_cache(maxsize=None)  # Используем кеширование для функций
-def itfact(x):  # Функция, вычисляющая и запоминающая факториалы
-    global fact
-    if fact[1] < x:  # Если нужно вычислить факториал больше того, что уже есть в списке,...
-        for i in range(fact[1]+1, x+1):  # ...то умножаем последний элемент на все недостающие числа
-            fact[0] = fact[0] * i
-    elif fact[1] > x:  # Если нужно вычислить факториал меньше того, что уже есть в списке,...
-        for i in range(x+1, fact[1]+1):   # ...то делим последний элемент на все лишние числа
-            fact[0] = fact[0] // i
-    fact[1] = x  # Запоминаем, что факториал x был вычислен последним
-    return fact[0]
+def itfact(x):
+    return factorials.get(x, math.factorial(x))
 
 @lru_cache(maxsize=None)
-def rec_f(x):  # Рекурсивная функция, которая также кешируется
-    if x < 2:  # Основной случай рекурсии
+def rec_f(x):
+    if x < 2:
         return 5
-    else:  # Усложненный рекурсивный случай
-        return ((-1)**x) * (itfact(x - 1) - rec_f(x - 5))
+    else:
+        return ((-1) ** x) * (itfact(x - 1) - rec_f(x - 5))
 
-def it_f(x):  # Аналогичная итеративная функция
-    f = [5, 5]  # Итеративный аналог рекурсивного определения
-    for i in range(2, x+1):
-        f[1] = ((-1)**i)*(itfact(i - 1) - f[0])
-        f[0], f[1] = f[1], f[0]
-    return f[1]
+def it_f(x):
+    if x < 2:
+        return 5
+    f = [5] * (x + 1)
+    for i in range(2, x + 1):
+        f[i] = ((-1) ** i) * (itfact(i - 1) - f[i - 5])
+    return f[x]
 
-while n < 1:  # Защита от ввода неправильных значений
-    print("Please enter a natural number larger than 1:")
-    n = int(input())
+def main():
+    n = -1
+    while n < 2:
+        try:
+            n = int(input("Введите натуральное число больше 1: "))
+        except ValueError:
+            print("Некорректный ввод, попробуйте снова.")
 
-graf = list(range(1, n+1))  # Создаем список для построения графика времени работы функций
+    # Предвычисляем факториалы до n
+    precompute_factorials(n)
 
-for i in graf:  # Считаем время работы каждой функции для каждого значения <= n
-    start = time.time()
-    result = it_f(i)
-    end = time.time()
-    timer.append(end - start)
+    graf = list(range(1, n + 1))
+    timer = []
+    timer_rec = []
 
-    start_rec = time.time()
-    res = rec_f(i)
-    end_rec = time.time()
-    timer_rec.append(end_rec - start_rec)
+    for i in graf:
+        start = time.time()
+        result = it_f(i)
+        end = time.time()
+        timer.append(end - start)
 
-    print(i,  # Выводим результаты и времена работы для каждого i <= n
-          " | Результат рекурсии ->", res,
-          " | результат итерации ->", result,
-          " | время рекурсии ->", end_rec - start_rec,
-          " | время итерации ->", end - start)
+        start_rec = time.time()
+        res = rec_f(i)
+        end_rec = time.time()
+        timer_rec.append(end_rec - start_rec)
 
-plt.figure(figsize=(10, 5))
-plt.plot(graf, timer, label='Итерационное вычисление.')  # Строим графики времени работы
-plt.plot(graf, timer_rec, label='Рекурсивное вычисление.')
+        print(i,
+              " | Результат рекурсии ->", res,
+              " | результат итерации ->", result,
+              " | время рекурсии ->", end_rec - start_rec,
+              " | время итерации ->", end - start)
 
-plt.xlabel('Значение n')
-plt.ylabel('Время выполнения (с)')
-plt.legend(loc=2)
+    plt.figure(figsize=(10, 5))
+    plt.plot(graf, timer, label='Итерационное вычисление')
+    plt.plot(graf, timer_rec, label='Рекурсивное вычисление')
+    plt.xlabel('Значение n')
+    plt.ylabel('Время выполнения (с)')
+    plt.title('Сравнение времени выполнения рекурсивного и итерационного вычисления')
+    plt.legend(loc='upper left')
+    plt.show()
 
-plt.show()  # Показываем оба графика одновременно
+if __name__ == "__main__":
+    main()
